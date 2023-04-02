@@ -1,0 +1,34 @@
+name: "Create NPM Version PR"
+description: "Updates the package version, commits the changes with a tag, and then publishes the package."
+inputs:
+  token:
+    description: "npm token"
+    required: true
+
+runs:
+  using: "composite"
+  steps:
+    - uses: actions/checkout@v3
+    - uses: actions/setup-node@v3
+      with:
+        node-version: 18
+        registry-url: "https://registry.npmjs.org"
+    - name: Tag
+      run: |
+        git tag v$(jq -r .version < package.json)
+        git push origin v$(jq -r .version < package.json)
+        gh pr comment ${{ github.event.number }} --body "Created tag [v$(jq -r .version < package.json)](https://github.com/${{ github.repository }}/releases/tag/v$(jq -r .version < package.json))."
+      shell: bash
+      env:
+        GH_TOKEN: ${{ github.token }}
+    - name: Publish to NPM
+      run: |
+        npm ci
+        npm publish --tag $(if [[ $(jq .version < package.json) =~ [0-9]+\.[0-9]+\.[0-9]+\-([^\.]+) ]]; then echo ${BASH_REMATCH[1]}; else echo "latest"; fi) --access public
+        gh pr comment ${{ github.event.number }} --body "🎉 Successfully published version [$(jq -r .version < package.json)](https://www.npmjs.com/package/$(jq -r .name < package.json)/v/$(jq -r .version < package.json)) to NPM!
+
+        Install this version: \`npm i $(jq -r .name < package.json)@$(if [[ $(jq .version < package.json) =~ [0-9]+\.[0-9]+\.[0-9]+\-([^\.]+) ]]; then echo ${BASH_REMATCH[1]}; else echo "latest"; fi)\`"
+      shell: bash
+      env:
+        NODE_AUTH_TOKEN: ${{ inputs.token }}
+        GH_TOKEN: ${{ github.token }}
