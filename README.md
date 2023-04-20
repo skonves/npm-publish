@@ -41,6 +41,21 @@ jobs:
           token: ${{ secrets.NPM_TOKEN }}
 ```
 
+To support [NPM Provenance](https://github.blog/changelog/2023-04-19-npm-provenance-public-beta/), use the `@provenance` tag and supply the following permissions:
+
+```yaml
+  publish:
+    # ...
+    permissions:
+      contents: write
+      discussions: write
+      id-token: write
+      pull-requests: write
+    steps:
+      - uses: skonves/npm-publish@provenance
+        # ...
+```
+
 This action requires that a [GitHub secret](https://docs.github.com/en/actions/security-guides/encrypted-secrets) named `NPM_TOKEN` is configured that contains an [NPM Automation token](https://github.blog/changelog/2020-10-02-npm-automation-tokens/).
 
 ## More info
